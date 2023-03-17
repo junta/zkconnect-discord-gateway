@@ -1,4 +1,4 @@
-## Sample implementation with ZKConnect
+## ZK Discord Gateway with ZKConnect
 
 This sample application allows giving a discord role to users once they have privately authenticate themselves with zkConnect single sign-on.
 
