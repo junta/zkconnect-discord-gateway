@@ -1,8 +1,33 @@
 import Head from "next/head";
-import { ZkConnectButton } from "@sismo-core/zk-connect-react";
-import { Box, Center, Container, Flex } from "@chakra-ui/react";
+import { useState } from "react";
+import axios from "axios";
+import {
+  ZkConnectButton,
+  ZkConnectClientConfig,
+  ZkConnectResponse,
+} from "@sismo-core/zk-connect-react";
+import { Box, Flex } from "@chakra-ui/react";
 
 export default function Home() {
+  const [verifying, setVerifying] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<
+    "already-subscribed" | "not-subscribed" | null
+  >(null);
+  const [zkConnectResponse, setZkConnectResponse] =
+    useState<ZkConnectResponse | null>(null);
+
+  const config: ZkConnectClientConfig = {
+    // appId: "0x8f347ca31790557391cec39b06f02dc2", // ethcc appId I created
+    appId: "0x0ac79baba82535964a0d2368aad57404",
+    devMode: {
+      enabled: true, // will use the Dev Sismo Data Vault https://dev.vault-beta.sismo.io/
+      devAddresses: [
+        // Will insert these addresses in data groups as eligible addresse
+        "0xeE22EE448a3A2b6B8F01A45da1476E2d01e24F3a",
+      ],
+    },
+  };
+
   return (
     <>
       <Head>
@@ -20,19 +45,38 @@ export default function Home() {
         bg="gray.100"
       >
         <Box>
-          <ZkConnectButton
-            //You will need to register an appId in the Factory
-            appId={"0x0ac79baba82535964a0d2368aad57404"}
-            //Request proofs from your users for a groupId
-            dataRequest={{
-              groupId: "0x1f433bbc17d9da9b811432335db8895a",
-            }}
-            //After user redirection get a response containing his proofs
-            onResponse={async (response) => {
-              //Send the response to your server to verify proofs
-              //thanks to the @sismo-core/zk-connect-server package
-            }}
-          />
+          {!subscriptionStatus ? (
+            <ZkConnectButton
+              config={config}
+              //You will need to register an appId in the Factory
+              // appId={"0x0ac79baba82535964a0d2368aad57404"}
+              //Request proofs from your users for a groupId
+              dataRequest={{
+                groupId: "0x1f433bbc17d9da9b811432335db8895a",
+                // groupId: "0x42c768bb8ae79e4c5c05d3b51a4ec74a",
+              }}
+              //After user redirection get a response containing his proofs
+              onResponse={async (response) => {
+                setZkConnectResponse(response);
+                setVerifying(true);
+                axios
+                  .post("api/subscribe", {
+                    zkConnectResponse: response,
+                  })
+                  .then((res) => {
+                    setVerifying(false);
+                    setSubscriptionStatus(res.data.status);
+                  })
+                  .catch((err) => {
+                    console.log(err.response.data.status);
+                    setVerifying(false);
+                  });
+              }}
+              verifying={verifying}
+            />
+          ) : (
+            <p>discord button</p>
+          )}
         </Box>
       </Flex>
     </>
