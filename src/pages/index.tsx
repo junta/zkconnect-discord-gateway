@@ -22,9 +22,9 @@ import {
 export default function Home() {
   const [verifying, setVerifying] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [status, setStatus] = useState<"not-subscribed" | "success" | null>(
-    null
-  );
+  const [status, setStatus] = useState<
+    "already-added" | "not-added" | "success" | null
+  >(null);
   const [zkConnectResponse, setZkConnectResponse] =
     useState<ZkConnectResponse | null>(null);
 
@@ -33,19 +33,29 @@ export default function Home() {
   if (typeof process.env.NEXT_PUBLIC_SISMO_APP_ID !== "string") {
     throw new Error("Please fill NEXT_PUBLIC_SISMO_APP_ID in your .env file");
   }
-  if (typeof process.env.NEXT_PUBLIC_DEV_ADDRESS !== "string") {
+  if (
+    typeof process.env.NEXT_PUBLIC_DEV_ADDRESS !== "string" &&
+    process.env.NODE_ENV === "development"
+  ) {
     throw new Error("Please fill NEXT_PUBLIC_DEV_ADDRESS in your .env file");
   }
 
+  const devMode =
+    process.env.NODE_ENV === "development"
+      ? {
+          enabled: true, // will use the Dev Sismo Data Vault https://dev.vault-beta.sismo.io/
+          devAddresses: [
+            // Will insert these addresses in data groups as eligible addresse
+            process.env.NEXT_PUBLIC_DEV_ADDRESS!,
+          ],
+        }
+      : {
+          enabled: false,
+        };
+
   const config: ZkConnectClientConfig = {
     appId: process.env.NEXT_PUBLIC_SISMO_APP_ID,
-    devMode: {
-      enabled: true, // will use the Dev Sismo Data Vault https://dev.vault-beta.sismo.io/
-      devAddresses: [
-        // Will insert these addresses in data groups as eligible addresse
-        process.env.NEXT_PUBLIC_DEV_ADDRESS,
-      ],
-    },
+    devMode: devMode,
   };
 
   const handleVerify = async (response: ZkConnectResponse) => {
@@ -120,7 +130,7 @@ export default function Home() {
             />
           </>
         )}
-        {status == "not-subscribed" && (
+        {status == "not-added" && (
           <>
             <Heading as="h2" size="lg" mb="8">
               You are eligible!
@@ -140,6 +150,11 @@ export default function Home() {
                 </Center>
               </FormControl>
             </form>
+          </>
+        )}
+        {status == "already-added" && (
+          <>
+            <Text>You have already claimed your role</Text>
           </>
         )}
         {status == "success" && (

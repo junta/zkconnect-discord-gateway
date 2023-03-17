@@ -12,7 +12,7 @@ export default async function handler(
     const vaultId = await zkConnectVerify(zkConnectResponse);
     console.log("vaultId", vaultId);
 
-    res.status(200).json({ status: "not-subscribed", vaultId });
+    res.status(200).json({ status: "not-added", vaultId });
   } catch (e: any) {
     res.status(400).json({ status: "error", message: e.message });
   }
