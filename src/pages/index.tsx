@@ -6,26 +6,80 @@ import {
   ZkConnectClientConfig,
   ZkConnectResponse,
 } from "@sismo-core/zk-connect-react";
-import { Box, Flex } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Center,
+  Flex,
+  FormControl,
+  FormHelperText,
+  FormLabel,
+  Heading,
+  Input,
+  Text,
+} from "@chakra-ui/react";
 
 export default function Home() {
   const [verifying, setVerifying] = useState(false);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<
-    "already-subscribed" | "not-subscribed" | null
-  >(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [status, setStatus] = useState<"not-subscribed" | "success" | null>(
+    null
+  );
   const [zkConnectResponse, setZkConnectResponse] =
     useState<ZkConnectResponse | null>(null);
 
+  const [discordId, setDiscordId] = useState("");
+
+  if (typeof process.env.NEXT_PUBLIC_SISMO_APP_ID !== "string") {
+    throw new Error("Please fill NEXT_PUBLIC_SISMO_APP_ID in your .env file");
+  }
+  if (typeof process.env.NEXT_PUBLIC_DEV_ADDRESS !== "string") {
+    throw new Error("Please fill NEXT_PUBLIC_DEV_ADDRESS in your .env file");
+  }
+
   const config: ZkConnectClientConfig = {
-    // appId: "0x8f347ca31790557391cec39b06f02dc2", // ethcc appId I created
-    appId: "0x0ac79baba82535964a0d2368aad57404",
+    appId: process.env.NEXT_PUBLIC_SISMO_APP_ID,
     devMode: {
       enabled: true, // will use the Dev Sismo Data Vault https://dev.vault-beta.sismo.io/
       devAddresses: [
         // Will insert these addresses in data groups as eligible addresse
-        "0xeE22EE448a3A2b6B8F01A45da1476E2d01e24F3a",
+        process.env.NEXT_PUBLIC_DEV_ADDRESS,
       ],
     },
+  };
+
+  const handleVerify = async (response: ZkConnectResponse) => {
+    setZkConnectResponse(response);
+    setVerifying(true);
+    axios
+      .post("api/verify", {
+        zkConnectResponse: response,
+      })
+      .then((res) => {
+        setVerifying(false);
+        setStatus(res.data.status);
+      })
+      .catch((err) => {
+        console.log(err.response.data.status);
+        setVerifying(false);
+      });
+  };
+
+  const handleGiveRole = async (event: { preventDefault: () => void }) => {
+    event.preventDefault();
+
+    axios
+      .post("api/addRole", {
+        discordId,
+        zkConnectResponse,
+      })
+      .then((res) => {
+        setStatus(res.data.status);
+      })
+      .catch((err) => {
+        console.log(err.response.data.status);
+        setErrorMessage("Discord ID is not valid");
+      });
   };
 
   return (
@@ -44,40 +98,61 @@ export default function Home() {
         minHeight="100vh"
         bg="gray.100"
       >
-        <Box>
-          {!subscriptionStatus ? (
+        {status == null && (
+          <>
+            <Heading as="h2" size="lg" mb="8">
+              Claim role to access our closed channel in Discord
+            </Heading>
+
             <ZkConnectButton
               config={config}
               //You will need to register an appId in the Factory
               // appId={"0x0ac79baba82535964a0d2368aad57404"}
               //Request proofs from your users for a groupId
               dataRequest={{
-                groupId: "0x1f433bbc17d9da9b811432335db8895a",
-                // groupId: "0x42c768bb8ae79e4c5c05d3b51a4ec74a",
+                groupId: process.env.NEXT_PUBLIC_SISMO_GROUP_ID,
               }}
               //After user redirection get a response containing his proofs
               onResponse={async (response) => {
-                setZkConnectResponse(response);
-                setVerifying(true);
-                axios
-                  .post("api/subscribe", {
-                    zkConnectResponse: response,
-                  })
-                  .then((res) => {
-                    setVerifying(false);
-                    setSubscriptionStatus(res.data.status);
-                  })
-                  .catch((err) => {
-                    console.log(err.response.data.status);
-                    setVerifying(false);
-                  });
+                handleVerify(response);
               }}
               verifying={verifying}
             />
-          ) : (
-            <p>discord button</p>
-          )}
-        </Box>
+          </>
+        )}
+        {status == "not-subscribed" && (
+          <>
+            <Heading as="h2" size="lg" mb="8">
+              You are eligible!
+            </Heading>
+            <form onSubmit={handleGiveRole}>
+              <FormControl>
+                <FormLabel>Your Discord User ID</FormLabel>
+                <Input
+                  type="text"
+                  onChange={(event) => setDiscordId(event.currentTarget.value)}
+                />
+
+                <Center>
+                  <Button mt={4} colorScheme="teal" type="submit">
+                    Submit
+                  </Button>
+                </Center>
+              </FormControl>
+            </form>
+          </>
+        )}
+        {status == "success" && (
+          <>
+            <Heading as="h2" size="lg" mb="8">
+              Congratulations!
+            </Heading>
+            <Text>
+              You have successfully claimed your role, please check our discord
+              server.
+            </Text>
+          </>
+        )}
       </Flex>
     </>
   );
