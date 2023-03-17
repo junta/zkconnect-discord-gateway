@@ -11,29 +11,23 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <Flex
-        direction="column"
-        alignItems="center"
-        justifyContent="center"
-        minHeight="100vh"
-        bg="gray.100"
-      >
-        <Box>
-          <ZkConnectButton
-            //You will need to register an appId in the Factory
-            appId={"0x0ac79baba82535964a0d2368aad57404"}
-            //Request proofs from your users for a groupId
-            dataRequest={{
-              groupId: "0x1f433bbc17d9da9b811432335db8895a",
-            }}
-            //After user redirection get a response containing his proofs
-            onResponse={async (response) => {
-              //Send the response to your server to verify proofs
-              //thanks to the @sismo-core/zk-connect-server package
-            }}
-          />
-        </Box>
-      </Flex>
+      {/* <Flex direction="column" minHeight="100vh" bg="gray.100"> */}
+      <Box>
+        <ZkConnectButton
+          //You will need to register an appId in the Factory
+          appId={"0x0ac79baba82535964a0d2368aad57404"}
+          //Request proofs from your users for a groupId
+          dataRequest={{
+            groupId: "0x1f433bbc17d9da9b811432335db8895a",
+          }}
+          //After user redirection get a response containing his proofs
+          onResponse={async (response) => {
+            //Send the response to your server to verify proofs
+            //thanks to the @sismo-core/zk-connect-server package
+          }}
+        />
+      </Box>
+      {/* </Flex> */}
     </>
   );
 }
